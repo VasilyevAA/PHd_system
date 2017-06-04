@@ -3,7 +3,6 @@
 
 import datetime
 import time
-import multiprocessing
 import os
 import threading
 
@@ -25,19 +24,19 @@ class WriteData(threading.Thread):
         for pt in self.arr:
             print(os.getcwd() + '/' + pt)
             lol = os.getcwd()
-            for x in range(0, 4):
+            for x in range(0, 100):
                 f = open(str(lol) + '/' + pt, 'a+')
                 print(f.read())
                 f.seek(len(f.read()))
                 f.write('%s    %s file for process %s: %s\n' % (datetime.datetime.now(), i, self.getName(), x))
                 f.close()
-                time.sleep(1)
+                time.sleep(2)
 
             i += 1
             time.sleep(5)
 
 for x in range(0, 3):
-    t = str(os.getcwd()) + '/' + str(x)
+    t = str(os.getcwd()) +'\\' + str(x+1)
     try:
         os.makedirs(t)
     except OSError:
