@@ -26,7 +26,6 @@ class WriteData(threading.Thread):
             lol = os.getcwd()
             for x in range(0, 100):
                 f = open(str(lol) + '/' + pt, 'a+')
-                print(f.read())
                 f.seek(len(f.read()))
                 f.write('%s    %s file for process %s: %s\n' % (datetime.datetime.now(), i, self.getName(), x))
                 f.close()

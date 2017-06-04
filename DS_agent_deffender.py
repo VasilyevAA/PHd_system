@@ -21,39 +21,43 @@ class ReadLogData(threading.Thread):
         self.path = path
 
     def run(self):
-        print(self.path)
-        files = os.listdir(self.path)
-        if files:
-            try:
-                files = [os.path.join(self.path, file) for file in files]
-                pathToFile = max(files, key= os.path.getctime)
-                maxRow = 0
-
-                f = open(pathToFile, 'r')
-                for i, line in enumerate(f):
-                    maxRow = i
-                f.close()
-
-                while (True):
-                    f = open(pathToFile, 'r')
-                    maxRowFile = maxRow
-                    for i, line in enumerate(f):
-                        if i > maxRow:
-                            print('row: %s, data: %s'%(i, line))
-                            maxRowFile = i
-
-                    files = os.listdir(self.path)
+        try:
+            print(self.path)
+            files = os.listdir(self.path)
+            if files:
+                try:
                     files = [os.path.join(self.path, file) for file in files]
-                    maxRow=maxRowFile
-                    if pathToFile != max(files, key= os.path.getctime):
-                        pathToFile = max(files, key= os.path.getctime)
-                        maxRow=int(-1)
+                    pathToFile = max(files, key= os.path.getctime)
+                    maxRow = 0
 
+                    f = open(pathToFile, 'r')
+                    for i, line in enumerate(f):
+                        maxRow = i
                     f.close()
 
-            except KeyboardInterrupt:
+                    while (True):
+                        f = open(pathToFile, 'r')
+                        maxRowFile = maxRow
+                        for i, line in enumerate(f):
+                            if i > maxRow:
+                                print('row: %s, data: %s'%(i, line))
+                                maxRowFile = i
 
-                print('Поток %s был остановен' % (self.getName()))
+                        files = os.listdir(self.path)
+                        files = [os.path.join(self.path, file) for file in files]
+                        maxRow=maxRowFile
+                        if pathToFile != max(files, key= os.path.getctime):
+                            pathToFile = max(files, key= os.path.getctime)
+                            maxRow=int(-1)
+
+                        f.close()
+                        time.sleep(10)
+
+                except KeyboardInterrupt:
+
+                    print('Поток %s был остановен' % (self.getName()))
+        except:
+            pass
 
 
 
