@@ -24,12 +24,12 @@ class WriteData(threading.Thread):
         for pt in self.arr:
             print(os.getcwd() + '/' + pt)
             lol = os.getcwd()
-            for x in range(0, 100):
+            for x in range(0, 1000):
                 f = open(str(lol) + '/' + pt, 'a+')
                 f.seek(len(f.read()))
                 f.write('%s    %s file for process %s: %s\n' % (datetime.datetime.now(), i, self.getName(), x))
                 f.close()
-                time.sleep(2)
+                time.sleep(5)
 
             i += 1
             time.sleep(5)

@@ -7,6 +7,8 @@ import datetime
 import time
 import os
 import threading
+import queue
+from DS_AES_256 import AESCipher
 
 
 allProcesses = []
@@ -16,9 +18,10 @@ for x in range(0, 3):
     pathAll.append(t)
 
 class ReadLogData(threading.Thread):
-    def __init__(self, path):
+    def __init__(self, path, work_queue):
         threading.Thread.__init__(self)
         self.path = path
+        self.work_queue = work_queue
 
     def run(self):
         try:
@@ -41,6 +44,7 @@ class ReadLogData(threading.Thread):
                         for i, line in enumerate(f):
                             if i > maxRow:
                                 print('row: %s, data: %s'%(i, line))
+                                self.work_queue.put(line)
                                 maxRowFile = i
 
                         files = os.listdir(self.path)
@@ -57,16 +61,52 @@ class ReadLogData(threading.Thread):
 
                     print('Поток %s был остановен' % (self.getName()))
         except:
-            pass
+            print('No idea!!!!')
+
+class SocketSender(threading.Thread):
+    def __init__(self, path, work_queue):
+        threading.Thread.__init__(self)
+        self.path = path
+        self.work_queue = work_queue
+
+    def run(self):
+        sock = socket.socket()
+        sock.connect(('localhost', 9090))
+        while True:
+            if not (self.work_queue.empty()):
+                item = work_queue.get()
+                data = {"data":{"hostname":"192.168.7.6", "ipaddress": "192.168.7.6", "comment": "АдминистраторСервер", "command": "discovery"}}
+                raw_data = json.dumps(data, ensure_ascii=False).encode("utf-8")
+                sock.send(raw_data)
+                print(data)
+                print(raw_data)
+                return_raw_data = sock.recv(2048)
+                data = json.loads(return_raw_data.decode("utf-8"))
+                print(data)
+
+        sock.close()
 
 
 
 if __name__ == "__main__":
 
+    print('Read all configure parametr')
+    work_queue = queue.Queue()
     for path in pathAll:
-        p = ReadLogData(path)
+        p = ReadLogData(path, work_queue)
+        p.setName('Thread - ReadLogData:'+path)
         allProcesses.append(p)
         p.start()
+
+    print('All log-files reading')
+    p = SocketSender(path, work_queue)
+    p.setName('Thread - SocketSender')
+    allProcesses.append(p)
+    p.start()
+
+
+
+
 
     print('danger                         :'+str(os.getpid()))
 
