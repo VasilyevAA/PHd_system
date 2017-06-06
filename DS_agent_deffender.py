@@ -52,7 +52,7 @@ class ReadLogData(threading.Thread):
                         maxRowFile = maxRow
                         for i, line in enumerate(f):
                             if i > maxRow:
-                                print('row: %s, data: %s'%(i, line))
+                                #print('row: %s, data: %s'%(i, line))
                                 send_dict = parseLog(line)
                                 send_dict.update({'service_name':'AgentDefender'})
                                 print(send_dict)
