@@ -8,14 +8,22 @@ import time
 import os
 import threading
 import queue
+import re
 from DS_AES_256 import AESCipher
 
-
+secretKey = 'TopSecretKey'
 allProcesses = []
-pathAll = []
-for x in range(0, 3):
-    t = str(os.getcwd()) +'\\' + str(x+1)
-    pathAll.append(t)
+
+
+
+
+
+
+
+def parseLog(raw):
+    ip_list = re.findall('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}.\d{1,6}', raw, re.DOTALL)
+    raw = {'sourse':ip_list[0], 'destination_resource':ip_list[1]}
+    return (raw)
 
 class ReadLogData(threading.Thread):
     def __init__(self, path, work_queue):
@@ -24,9 +32,10 @@ class ReadLogData(threading.Thread):
         self.work_queue = work_queue
 
     def run(self):
-        try:
+        #try:
             print(self.path)
             files = os.listdir(self.path)
+            cipher = AESCipher(key=secretKey)
             if files:
                 try:
                     files = [os.path.join(self.path, file) for file in files]
@@ -44,7 +53,11 @@ class ReadLogData(threading.Thread):
                         for i, line in enumerate(f):
                             if i > maxRow:
                                 print('row: %s, data: %s'%(i, line))
-                                self.work_queue.put(line)
+                                send_dict = parseLog(line)
+                                send_dict.update({'service_name':'AgentDefender'})
+                                print(send_dict)
+                                enc_line_data = cipher.encrypt(json.dumps(send_dict, ensure_ascii=False).encode("utf-8"))
+                                self.work_queue.put(enc_line_data)
                                 maxRowFile = i
 
                         files = os.listdir(self.path)
@@ -60,8 +73,8 @@ class ReadLogData(threading.Thread):
                 except KeyboardInterrupt:
 
                     print('Поток %s был остановен' % (self.getName()))
-        except:
-            print('No idea!!!!')
+        # except:
+        #     print('No idea!!!!')
 
 class SocketSender(threading.Thread):
     def __init__(self, path, work_queue):
@@ -75,20 +88,30 @@ class SocketSender(threading.Thread):
         while True:
             if not (self.work_queue.empty()):
                 item = work_queue.get()
-                data = {"data":{"hostname":"192.168.7.6", "ipaddress": "192.168.7.6", "comment": "АдминистраторСервер", "command": "discovery"}}
+                data = {"data": item}
                 raw_data = json.dumps(data, ensure_ascii=False).encode("utf-8")
                 sock.send(raw_data)
-                print(data)
-                print(raw_data)
-                return_raw_data = sock.recv(2048)
-                data = json.loads(return_raw_data.decode("utf-8"))
-                print(data)
+                get_srv_data = sock.recv(2048)
+                print (get_srv_data)
+
+
+
+                # print(data)
+                # print(raw_data)
+                # return_raw_data = sock.recv(2048)
+                # data = json.loads(return_raw_data.decode("utf-8"))
+                # print(data)
 
         sock.close()
 
 
 
 if __name__ == "__main__":
+    pathAll = []
+    for x in range(0, 3):
+        t = str(os.getcwd()) + '\\' + str(x + 1)
+        pathAll.append(t)
+
 
     print('Read all configure parametr')
     work_queue = queue.Queue()

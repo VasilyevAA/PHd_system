@@ -6,6 +6,11 @@ import multiprocessing
 import os
 from DS_AES_256 import AESCipher
 
+
+secretKey = 'TopSecretKey'
+
+
+
 def do_this(what):
     whoami(what)
 

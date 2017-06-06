@@ -5,6 +5,7 @@ import datetime
 import time
 import os
 import threading
+import random
 
 
 path1 = ['1\\test1.1','1\\test1.2']
@@ -27,7 +28,7 @@ class WriteData(threading.Thread):
             for x in range(0, 1000):
                 f = open(str(lol) + '/' + pt, 'a+')
                 f.seek(len(f.read()))
-                f.write('%s    %s file for process %s: %s\n' % (datetime.datetime.now(), i, self.getName(), x))
+                f.write('%s %s file for process %s: {From:%s      To:%s}\n' % (datetime.datetime.now(), i, self.getName(), '111.11.11.100.9000', '192.168.1.'+(str(random.randint(1, 255)))+'.'+(str(random.randint(5, 9000)))))
                 f.close()
                 time.sleep(5)
 
