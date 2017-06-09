@@ -1,32 +1,64 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import datetime
-import multiprocessing
-import os
+import queue
+import socket
+import threading
+from subprocess import Popen, PIPE
 from DS_AES_256 import AESCipher
-
+from SocketFactory import SocketReader
 
 secretKey = 'TopSecretKey'
+ip_port = 10000
 
 
 
-def do_this(what):
-    whoami(what)
+def do_docker_command(command):
+    proc = Popen(
+        command,
+        shell=True,
+        stdout=PIPE, stderr=PIPE
+    )
+    proc.wait()  # дождаться выполнения
+    res = proc.communicate()  # получить tuple('stdout', 'stderr')
+    if proc.returncode:
+        print
+        res[1]
+    print
+    'result:', res[0]
 
-def whoami(what):
-    t1 = datetime.datetime.now()
-    for i in range(0, 100):
-        x = i*i
-        if(x%1000000==0):
-            print('{}: Start time {}'.format(datetime.datetime.now(), x))
-    print("Process %s says: %s" % (os.getpid(), what))
-    print('Start time %s' % t1)
+
+class RoutingData(threading.Thread):
+    def __init__(self, work_queue):
+        threading.Thread.__init__(self)
+        self.work_queue = work_queue
+
+
+    def run(self):
+        
+        while True:
+            if not work_queue.empty():
+                routing_item = work_queue.get()
+                return 0
+                routing_command = "iptables -A INPUT --destanation $s "%(routing_item[0])
+
+
 
 if __name__ == "__main__":
-    whoami("I'm the main program")
-    for n in range(4):
-        p = multiprocessing.Process(target=do_this,
-          args=("I'm function %s" % n,))
-        p.start()
-        print('danger                         :'+os.getcwd()+'/')
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    ip_addr = s.getsockname()[0]
+    print(ip_addr)
+    s.close()
+
+    cipher = AESCipher(key=secretKey)
+    work_queue = queue.Queue()
+
+    p = SocketReader(ip_addr, ip_port, work_queue, 'DS_routing_app', 1)
+    p.setName('Thread - SocketReader')
+    p.start()
+
+    p = RoutingData(work_queue)
+    p.setName('Thread - RoutingData')
+    p.start()

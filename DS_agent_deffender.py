@@ -10,9 +10,12 @@ import threading
 import queue
 import re
 from DS_AES_256 import AESCipher
+from SocketFactory import SocketSender
 
 secretKey = 'TopSecretKey'
 allProcesses = []
+DS_ip_dest = '127.0.0.1'
+ip_port = 9090
 
 
 
@@ -22,7 +25,7 @@ allProcesses = []
 
 def parseLog(raw):
     ip_list = re.findall('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}.\d{1,6}', raw, re.DOTALL)
-    raw = {'sourse':ip_list[0], 'destination_resource':ip_list[1]}
+    raw = {'source':ip_list[0], 'destination_resource':ip_list[1]}
     return (raw)
 
 class ReadLogData(threading.Thread):
@@ -32,7 +35,7 @@ class ReadLogData(threading.Thread):
         self.work_queue = work_queue
 
     def run(self):
-        #try:
+        try:
             print(self.path)
             files = os.listdir(self.path)
             cipher = AESCipher(key=secretKey)
@@ -55,7 +58,7 @@ class ReadLogData(threading.Thread):
                                 #print('row: %s, data: %s'%(i, line))
                                 send_dict = parseLog(line)
                                 send_dict.update({'service_name':'AgentDefender'})
-                                print(send_dict)
+                                #print(send_dict)
                                 enc_line_data = cipher.encrypt(json.dumps(send_dict, ensure_ascii=False).encode("utf-8"))
                                 self.work_queue.put(enc_line_data)
                                 maxRowFile = i
@@ -73,37 +76,8 @@ class ReadLogData(threading.Thread):
                 except KeyboardInterrupt:
 
                     print('Поток %s был остановен' % (self.getName()))
-        # except:
-        #     print('No idea!!!!')
-
-class SocketSender(threading.Thread):
-    def __init__(self, path, work_queue):
-        threading.Thread.__init__(self)
-        self.path = path
-        self.work_queue = work_queue
-
-    def run(self):
-        sock = socket.socket()
-        sock.connect(('localhost', 9090))
-        while True:
-            if not (self.work_queue.empty()):
-                item = work_queue.get()
-                data = {"data": item}
-                raw_data = json.dumps(data, ensure_ascii=False).encode("utf-8")
-                sock.send(raw_data)
-                get_srv_data = sock.recv(2048)
-                print (get_srv_data)
-
-
-
-                # print(data)
-                # print(raw_data)
-                # return_raw_data = sock.recv(2048)
-                # data = json.loads(return_raw_data.decode("utf-8"))
-                # print(data)
-
-        sock.close()
-
+        except:
+            print('No idea!!!!')
 
 
 if __name__ == "__main__":
@@ -120,13 +94,14 @@ if __name__ == "__main__":
         p.setName('Thread - ReadLogData:'+path)
         allProcesses.append(p)
         p.start()
+        print('Started Thread - ReadLogData:'+path)
 
-    print('All log-files reading')
-    p = SocketSender(path, work_queue)
+
+    p = SocketSender(DS_ip_dest, ip_port, work_queue)
     p.setName('Thread - SocketSender')
     allProcesses.append(p)
     p.start()
-
+    print('Started Thread - SocketSender')
 
 
 
